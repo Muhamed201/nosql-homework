@@ -1,6 +1,7 @@
 CREATE TABLE users
 (
     user_id  INTEGER PRIMARY KEY,
+
     username VARCHAR(50),
     email    VARCHAR(100)
 );

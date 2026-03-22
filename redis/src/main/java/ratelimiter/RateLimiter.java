@@ -20,10 +20,29 @@ public class RateLimiter {
     this.maxRequestCount = maxRequestCount;
     this.timeWindowSeconds = timeWindowSeconds;
   }
-
+  // Логику самого алгоритма новый запрос на границе TTL не сломает, так как перед каждым подсчетом
+  // zcard мы вызываем zremrangeByScore. Эта команда гарантирует, что внутри zset всегда находятся
+  // только актуальные записи, попадающие в текущее временное окно, независимо от того, сколько живет
+  // сам ключ. Но здесь есть проблема с управлением памятью: если вызывать expire при каждом успешном
+  // проходе pass(), мы будем постоянно отодвигать время удаления ключа. Если запросы идут стабильно,
+  // ключ может висеть в памяти бесконечно долго, по этому я добавлю if (count == 0), чтобы expire
+  // устанавливался только при создании нового окна. Как то вот так.
   public boolean pass() {
-    // TODO: Implementation
-    return false;
+    long now = Instant.now().toEpochMilli();
+    long windowStart = now - (timeWindowSeconds * 1000);
+    redis.zremrangeByScore(label, 0, windowStart);
+    long count = redis.zcard(label);
+    if (count < maxRequestCount) {
+      String uniqueMember = now + ":" + java.util.UUID.randomUUID().toString();
+      redis.zadd(label, (double) now, uniqueMember);
+      if (count == 0) {
+        redis.expire(label, timeWindowSeconds + 1);
+      }
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   public static void main(String[] args) {
