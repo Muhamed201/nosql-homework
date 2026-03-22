@@ -29,7 +29,9 @@ public class RateLimiter {
     if (count < maxRequestCount) {
       String uniqueMember = now + ":" + java.util.UUID.randomUUID().toString();
       redis.zadd(label, (double) now, uniqueMember);
-      redis.expire(label, timeWindowSeconds);
+      if (count == 0) {
+        redis.expire(label, timeWindowSeconds + 1);
+      }
       return true;
     }
     else {
