@@ -11,8 +11,13 @@ CREATE TABLE IF NOT EXISTS posts_by_user
     post_id    int,
     username   text,
     topic_id   int,
+    -- Я хотел сделать всё с помощью одной таблицы, но потом понял, что не получится и создал вторую.
+    -- В первой таблице поле topic_id просто забыл убрать
     content    text,
     PRIMARY KEY (user_id, created_at, post_id)
+-- Для уникальности. Я подумал, может произойти такой случай, что user создаст несколько постов
+-- одновременно, из-за этого добавил в PRIMARY KEY post_id . Опять же, не знаю, может такое
+-- произойти или нет, но решил перестраховаться
 ) WITH CLUSTERING ORDER BY (created_at DESC, post_id ASC);
 
 
@@ -24,6 +29,8 @@ CREATE TABLE IF NOT EXISTS posts_by_topic
     user_id    int,
     username   text,
     PRIMARY KEY (topic_id, created_at, post_id)
+--Такой же случай, как и выше
+
 ) WITH CLUSTERING ORDER BY (created_at DESC, post_id ASC);
 
 
